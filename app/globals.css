@@ -1,11 +1,87 @@
 @import "tailwindcss";
 
+@theme {
+  --color-shell: #0b2545;
+  --color-brand: #0a6ed1;
+  --color-brand-dark: #0854a0;
+  --color-surface: #f4f6f8;
+  --color-line: #d9dde1;
+  --color-muted: #6a6d70;
+}
+
 :root {
   color-scheme: light;
 }
 
 body {
-  background: #f3f4f6;
-  color: #111827;
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-surface);
+  color: #1d2d3e;
+  font-family: "Segoe UI", Arial, Helvetica, sans-serif;
+  font-size: 13px;
+}
+
+.card {
+  background: #fff;
+  border: 1px solid var(--color-line);
+  border-radius: 6px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--color-line);
+  background: #fff;
+  color: #1d2d3e;
+  border-radius: 4px;
+  padding: 5px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.btn:hover { background: #eef1f4; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-primary { background: var(--color-brand); border-color: var(--color-brand); color: #fff; }
+.btn-primary:hover { background: var(--color-brand-dark); }
+.btn-danger { background: #bb0000; border-color: #bb0000; color: #fff; }
+.btn-danger:hover { background: #940000; }
+
+.input {
+  width: 100%;
+  border: 1px solid #b8bec4;
+  border-radius: 4px;
+  background: #fff;
+  padding: 5px 8px;
+  font-size: 13px;
+}
+.input:focus { outline: 2px solid var(--color-brand); outline-offset: -1px; border-color: var(--color-brand); }
+.label { display: block; margin-bottom: 3px; font-size: 12px; font-weight: 600; color: #4b5563; }
+
+.tabla { width: 100%; border-collapse: collapse; background: #fff; }
+.tabla th {
+  background: #eef1f4;
+  color: #4b5563;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--color-line);
+  position: sticky;
+  top: 0;
+}
+.tabla td { padding: 5px 10px; border-bottom: 1px solid #edf0f2; }
+.tabla tbody tr:nth-child(even) { background: #fafbfc; }
+.tabla tbody tr:hover { background: #eef5fd; }
+
+.badge { display: inline-block; border-radius: 999px; padding: 1px 8px; font-size: 11px; font-weight: 600; }
+.badge-ok { background: #e5f5e8; color: #107e3e; }
+.badge-gris { background: #e8ebee; color: #5b6670; }
+.badge-error { background: #fde8e8; color: #bb0000; }
+
+.alerta { border-radius: 4px; padding: 7px 12px; font-size: 13px; margin-bottom: 12px; }
+.alerta-ok { background: #e5f5e8; color: #107e3e; border: 1px solid #b9e3c1; }
+.alerta-error { background: #fde8e8; color: #bb0000; border: 1px solid #f4bcbc; }
+
+@media print {
+  body { background: #fff; }
 }
