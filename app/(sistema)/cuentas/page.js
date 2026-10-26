@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Pencil, Plus, Power, Search } from "lucide-react";
 import { api } from "@/lib/api";
+import { Encabezado, Modal, useAviso } from "@/components/ui";
 
 const TIPOS = ["Activo", "Pasivo", "Capital", "Ingreso", "Costo", "Gasto"];
 
@@ -15,17 +17,17 @@ const VACIO = {
 };
 
 export default function CuentasPage() {
+  const aviso = useAviso();
   const [lista, setLista] = useState([]);
   const [buscar, setBuscar] = useState("");
-  const [form, setForm] = useState(VACIO);
-  const [mensaje, setMensaje] = useState("");
-  const [error, setError] = useState("");
+  const [tipoFiltro, setTipoFiltro] = useState("");
+  const [form, setForm] = useState(null);
 
   async function cargar() {
     try {
       setLista(await api("/api/cuentas"));
     } catch (e) {
-      setError(e.message);
+      aviso.error(e.message);
     }
   }
 
@@ -46,13 +48,10 @@ export default function CuentasPage() {
       idCuentaPadre: c.idCuentaPadre ?? "",
       aceptaMovimientos: c.aceptaMovimientos,
     });
-    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   async function guardar(e) {
     e.preventDefault();
-    setMensaje("");
-    setError("");
     const cuerpo = {
       codigo: form.codigo,
       nombre: form.nombre,
@@ -63,160 +62,194 @@ export default function CuentasPage() {
     try {
       if (form.idCuenta) {
         await api(`/api/cuentas/${form.idCuenta}`, { method: "PUT", body: cuerpo });
-        setMensaje("Cuenta actualizada");
+        aviso.ok("Cuenta actualizada");
       } else {
         await api("/api/cuentas", { method: "POST", body: cuerpo });
-        setMensaje("Cuenta creada");
+        aviso.ok("Cuenta creada");
       }
-      setForm(VACIO);
+      setForm(null);
       cargar();
     } catch (err) {
-      setError(err.message);
+      aviso.error(err.message);
     }
   }
 
   async function alternarActiva(c) {
-    setMensaje("");
-    setError("");
     try {
       await api(`/api/cuentas/${c.idCuenta}/activa`, {
         method: "PUT",
         body: { activa: !c.activa },
       });
+      aviso.ok(`Cuenta ${c.codigo} ${c.activa ? "desactivada" : "activada"}`);
       cargar();
     } catch (err) {
-      setError(err.message);
+      aviso.error(err.message);
     }
   }
 
   const texto = buscar.trim().toLowerCase();
-  const visibles = lista.filter((c) => `${c.codigo} ${c.nombre}`.toLowerCase().includes(texto));
+  const visibles = lista.filter(
+    (c) =>
+      `${c.codigo} ${c.nombre}`.toLowerCase().includes(texto) && (!tipoFiltro || c.tipo === tipoFiltro)
+  );
   const padres = lista.filter((c) => !c.aceptaMovimientos && c.activa);
 
   return (
     <div>
-      <h1 className="mb-4 text-2xl font-bold">Nomenclatura contable</h1>
+      <Encabezado
+        titulo="Nomenclatura contable"
+        descripcion={`${lista.length} cuentas en el catálogo`}
+      >
+        <button className="btn btn-primary" onClick={() => setForm({ ...VACIO })}>
+          <Plus size={16} /> Nueva cuenta
+        </button>
+      </Encabezado>
 
-      {mensaje && <p className="mb-3 rounded bg-green-100 px-3 py-2 text-sm text-green-800">{mensaje}</p>}
-      {error && <p className="mb-3 rounded bg-red-100 px-3 py-2 text-sm text-red-800">{error}</p>}
-
-      <form onSubmit={guardar} className="mb-6 grid max-w-4xl grid-cols-2 gap-4 rounded bg-white p-4 shadow">
-        <h2 className="col-span-2 font-semibold">{form.idCuenta ? "Editar cuenta" : "Nueva cuenta"}</h2>
-
-        <div>
-          <label className="mb-1 block text-sm font-medium">Código</label>
+      <div className="card mb-3 flex max-w-5xl items-center gap-3 p-3">
+        <div className="relative flex-1">
+          <Search size={15} className="absolute left-2 top-2 text-muted" />
           <input
-            className="w-full rounded border border-gray-300 px-2 py-1"
-            value={form.codigo}
-            onChange={(e) => campo("codigo", e.target.value)}
-            required
+            className="input pl-7"
+            placeholder="Buscar por código o nombre..."
+            value={buscar}
+            onChange={(e) => setBuscar(e.target.value)}
           />
         </div>
-        <div>
-          <label className="mb-1 block text-sm font-medium">Nombre</label>
-          <input
-            className="w-full rounded border border-gray-300 px-2 py-1"
-            value={form.nombre}
-            onChange={(e) => campo("nombre", e.target.value)}
-            required
-          />
-        </div>
-        <div>
-          <label className="mb-1 block text-sm font-medium">Cuenta padre (opcional)</label>
-          <select
-            className="w-full rounded border border-gray-300 px-2 py-1"
-            value={form.idCuentaPadre}
-            onChange={(e) => campo("idCuentaPadre", e.target.value)}
-          >
-            <option value="">(Sin padre: cuenta de nivel 1)</option>
-            {padres.map((p) => (
-              <option key={p.idCuenta} value={p.idCuenta}>
-                {p.codigo} - {p.nombre}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="mb-1 block text-sm font-medium">Tipo</label>
-          <select
-            className="w-full rounded border border-gray-300 px-2 py-1 disabled:bg-gray-100"
-            value={form.tipo}
-            onChange={(e) => campo("tipo", e.target.value)}
-            disabled={!!form.idCuentaPadre}
-          >
-            {TIPOS.map((t) => (
-              <option key={t}>{t}</option>
-            ))}
-          </select>
-          {form.idCuentaPadre && <p className="mt-1 text-xs text-gray-500">El tipo se hereda de la cuenta padre.</p>}
-        </div>
-        <label className="col-span-2 flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={form.aceptaMovimientos}
-            onChange={(e) => campo("aceptaMovimientos", e.target.checked)}
-          />
-          Acepta movimientos (cuenta de último nivel)
-        </label>
-
-        <div className="col-span-2 flex gap-2">
-          <button type="submit" className="rounded bg-slate-800 px-4 py-1.5 text-white hover:bg-slate-700">
-            {form.idCuenta ? "Guardar cambios" : "Crear cuenta"}
-          </button>
-          {form.idCuenta && (
-            <button
-              type="button"
-              onClick={() => setForm(VACIO)}
-              className="rounded border border-slate-800 px-4 py-1.5 hover:bg-slate-100"
-            >
-              Cancelar
-            </button>
-          )}
-        </div>
-      </form>
-
-      <input
-        className="mb-3 w-full max-w-md rounded border border-gray-300 bg-white px-3 py-2"
-        placeholder="Buscar por código o nombre..."
-        value={buscar}
-        onChange={(e) => setBuscar(e.target.value)}
-      />
-
-      <table className="w-full max-w-4xl overflow-hidden rounded bg-white shadow">
-        <thead className="bg-slate-100 text-left text-sm">
-          <tr>
-            <th className="px-3 py-2">Código</th>
-            <th className="px-3 py-2">Nombre</th>
-            <th className="px-3 py-2">Tipo</th>
-            <th className="px-3 py-2">Naturaleza</th>
-            <th className="px-3 py-2">Movimientos</th>
-            <th className="px-3 py-2">Estado</th>
-            <th className="px-3 py-2"></th>
-          </tr>
-        </thead>
-        <tbody>
-          {visibles.map((c) => (
-            <tr key={c.idCuenta} className={`border-t text-sm ${c.activa ? "" : "text-gray-400"}`}>
-              <td className="px-3 py-2 font-mono">{c.codigo}</td>
-              <td className="px-3 py-2" style={{ paddingLeft: `${12 + (c.nivel - 1) * 16}px` }}>
-                {c.nombre}
-              </td>
-              <td className="px-3 py-2">{c.tipo}</td>
-              <td className="px-3 py-2">{c.naturaleza}</td>
-              <td className="px-3 py-2">{c.aceptaMovimientos ? "Sí" : "No"}</td>
-              <td className="px-3 py-2">{c.activa ? "Activa" : "Inactiva"}</td>
-              <td className="flex gap-2 px-3 py-2">
-                <button onClick={() => editar(c)} className="rounded border border-slate-800 px-2 py-1 hover:bg-slate-100">
-                  Editar
-                </button>
-                <button onClick={() => alternarActiva(c)} className="rounded border border-slate-800 px-2 py-1 hover:bg-slate-100">
-                  {c.activa ? "Desactivar" : "Activar"}
-                </button>
-              </td>
-            </tr>
+        <select
+          className="input w-44"
+          value={tipoFiltro}
+          onChange={(e) => setTipoFiltro(e.target.value)}
+        >
+          <option value="">Todos los tipos</option>
+          {TIPOS.map((t) => (
+            <option key={t}>{t}</option>
           ))}
-        </tbody>
-      </table>
+        </select>
+      </div>
+
+      <div className="card max-w-5xl overflow-hidden">
+        <table className="tabla">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Nombre</th>
+              <th>Tipo</th>
+              <th>Naturaleza</th>
+              <th>Movimientos</th>
+              <th>Estado</th>
+              <th className="w-44"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {visibles.map((c) => (
+              <tr key={c.idCuenta} className={c.activa ? "" : "text-muted"}>
+                <td className="font-mono">{c.codigo}</td>
+                <td
+                  className={c.aceptaMovimientos ? "" : "font-semibold"}
+                  style={{ paddingLeft: `${10 + (c.nivel - 1) * 18}px` }}
+                >
+                  {c.nombre}
+                </td>
+                <td>{c.tipo}</td>
+                <td>{c.naturaleza}</td>
+                <td>{c.aceptaMovimientos ? "Sí" : "No"}</td>
+                <td>
+                  <span className={`badge ${c.activa ? "badge-ok" : "badge-gris"}`}>
+                    {c.activa ? "Activa" : "Inactiva"}
+                  </span>
+                </td>
+                <td>
+                  <div className="flex gap-2">
+                    <button className="btn" onClick={() => editar(c)}>
+                      <Pencil size={14} /> Editar
+                    </button>
+                    <button className="btn" onClick={() => alternarActiva(c)}>
+                      <Power size={14} /> {c.activa ? "Desactivar" : "Activar"}
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+            {visibles.length === 0 && (
+              <tr>
+                <td colSpan={7} className="text-center text-muted">
+                  No hay cuentas que coincidan.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {form && (
+        <Modal titulo={form.idCuenta ? "Editar cuenta" : "Nueva cuenta"} onCerrar={() => setForm(null)}>
+          <form onSubmit={guardar} className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="label">Código</label>
+              <input
+                className="input"
+                value={form.codigo}
+                onChange={(e) => campo("codigo", e.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <label className="label">Nombre</label>
+              <input
+                className="input"
+                value={form.nombre}
+                onChange={(e) => campo("nombre", e.target.value)}
+                required
+              />
+            </div>
+            <div className="col-span-2">
+              <label className="label">Cuenta padre (opcional)</label>
+              <select
+                className="input"
+                value={form.idCuentaPadre}
+                onChange={(e) => campo("idCuentaPadre", e.target.value)}
+              >
+                <option value="">(Sin padre: cuenta de nivel 1)</option>
+                {padres.map((p) => (
+                  <option key={p.idCuenta} value={p.idCuenta}>
+                    {p.codigo} - {p.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="label">Tipo</label>
+              <select
+                className="input disabled:bg-gray-100"
+                value={form.tipo}
+                onChange={(e) => campo("tipo", e.target.value)}
+                disabled={!!form.idCuentaPadre}
+              >
+                {TIPOS.map((t) => (
+                  <option key={t}>{t}</option>
+                ))}
+              </select>
+              {form.idCuentaPadre && <p className="mt-1 text-xs text-muted">Se hereda de la cuenta padre.</p>}
+            </div>
+            <label className="flex items-center gap-2 pt-5 text-sm">
+              <input
+                type="checkbox"
+                checked={form.aceptaMovimientos}
+                onChange={(e) => campo("aceptaMovimientos", e.target.checked)}
+              />
+              Acepta movimientos
+            </label>
+            <div className="col-span-2 flex justify-end gap-2 pt-2">
+              <button type="button" className="btn" onClick={() => setForm(null)}>
+                Cancelar
+              </button>
+              <button type="submit" className="btn btn-primary">
+                {form.idCuenta ? "Guardar cambios" : "Crear cuenta"}
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
     </div>
   );
 }

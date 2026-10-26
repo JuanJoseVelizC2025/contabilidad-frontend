@@ -18,6 +18,7 @@ import {
   Users,
 } from "lucide-react";
 import { api, obtenerUsuario, cerrarSesion } from "@/lib/api";
+import { AvisoProvider } from "@/components/ui";
 
 const TODOS = ["Administrador", "Contador", "Consulta"];
 const ADMIN = ["Administrador"];
@@ -205,7 +206,11 @@ export default function SistemaLayout({ children }) {
               Inicio / {actual.grupo} / <span className="text-slate-800">{actual.etiqueta}</span>
             </p>
           )}
-          {permitido ? children : <p className="text-red-600">No tiene permiso para ver esta pantalla.</p>}
+                    {permitido ? (
+            <AvisoProvider>{children}</AvisoProvider>
+          ) : (
+            <p className="text-red-600">No tiene permiso para ver esta pantalla.</p>
+          )}          
         </main>
       </div>
     </div>

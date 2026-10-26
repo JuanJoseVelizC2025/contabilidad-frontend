@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Pencil, Plus, Power } from "lucide-react";
 import { api, obtenerUsuario } from "@/lib/api";
+import { Encabezado, Modal, useAviso } from "@/components/ui";
 
 const VACIO = {
   idUsuario: null,
@@ -13,18 +15,17 @@ const VACIO = {
 };
 
 export default function UsuariosPage() {
+  const aviso = useAviso();
   const [lista, setLista] = useState([]);
   const [roles, setRoles] = useState([]);
-  const [form, setForm] = useState(VACIO);
+  const [form, setForm] = useState(null);
   const [miId, setMiId] = useState(null);
-  const [mensaje, setMensaje] = useState("");
-  const [error, setError] = useState("");
 
   async function cargar() {
     try {
       setLista(await api("/api/usuarios"));
     } catch (e) {
-      setError(e.message);
+      aviso.error(e.message);
     }
   }
 
@@ -32,7 +33,7 @@ export default function UsuariosPage() {
     cargar();
     api("/api/roles")
       .then(setRoles)
-      .catch((e) => setError(e.message));
+      .catch((e) => aviso.error(e.message));
     setMiId(obtenerUsuario()?.id ?? null);
   }, []);
 
@@ -49,13 +50,10 @@ export default function UsuariosPage() {
       correo: u.correo ?? "",
       idRol: String(u.idRol),
     });
-    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   async function guardar(e) {
     e.preventDefault();
-    setMensaje("");
-    setError("");
     const cuerpo = {
       nombreUsuario: form.nombreUsuario,
       clave: form.clave || null,
@@ -66,156 +64,160 @@ export default function UsuariosPage() {
     try {
       if (form.idUsuario) {
         await api(`/api/usuarios/${form.idUsuario}`, { method: "PUT", body: cuerpo });
-        setMensaje("Usuario actualizado");
+        aviso.ok("Usuario actualizado");
       } else {
         await api("/api/usuarios", { method: "POST", body: cuerpo });
-        setMensaje("Usuario creado");
+        aviso.ok("Usuario creado");
       }
-      setForm(VACIO);
+      setForm(null);
       cargar();
     } catch (err) {
-      setError(err.message);
+      aviso.error(err.message);
     }
   }
 
   async function alternarActivo(u) {
-    setMensaje("");
-    setError("");
     try {
       await api(`/api/usuarios/${u.idUsuario}/activo`, {
         method: "PUT",
         body: { activo: !u.activo },
       });
+      aviso.ok(`Usuario ${u.nombreUsuario} ${u.activo ? "desactivado" : "activado"}`);
       cargar();
     } catch (err) {
-      setError(err.message);
+      aviso.error(err.message);
     }
   }
 
-  const editando = form.idUsuario !== null;
+  const editando = form && form.idUsuario !== null;
 
   return (
     <div>
-      <h1 className="mb-4 text-2xl font-bold">Usuarios</h1>
+      <Encabezado
+        titulo="Usuarios"
+        descripcion="Quién puede entrar al sistema y qué puede hacer según su rol"
+      >
+        <button className="btn btn-primary" onClick={() => setForm({ ...VACIO })}>
+          <Plus size={16} /> Nuevo usuario
+        </button>
+      </Encabezado>
 
-      {mensaje && <p className="mb-3 rounded bg-green-100 px-3 py-2 text-sm text-green-800">{mensaje}</p>}
-      {error && <p className="mb-3 rounded bg-red-100 px-3 py-2 text-sm text-red-800">{error}</p>}
-
-      <form onSubmit={guardar} className="mb-6 grid max-w-4xl grid-cols-2 gap-4 rounded bg-white p-4 shadow">
-        <h2 className="col-span-2 font-semibold">{editando ? "Editar usuario" : "Nuevo usuario"}</h2>
-
-        <div>
-          <label className="mb-1 block text-sm font-medium">Usuario</label>
-          <input
-            className="w-full rounded border border-gray-300 px-2 py-1 disabled:bg-gray-100"
-            value={form.nombreUsuario}
-            onChange={(e) => campo("nombreUsuario", e.target.value)}
-            disabled={editando}
-            required
-          />
-        </div>
-        <div>
-          <label className="mb-1 block text-sm font-medium">
-            Contraseña {editando && <span className="font-normal text-gray-500">(vacío = no cambiar)</span>}
-          </label>
-          <input
-            type="password"
-            autoComplete="new-password"
-            className="w-full rounded border border-gray-300 px-2 py-1"
-            value={form.clave}
-            onChange={(e) => campo("clave", e.target.value)}
-            required={!editando}
-          />
-        </div>
-        <div>
-          <label className="mb-1 block text-sm font-medium">Nombre completo</label>
-          <input
-            className="w-full rounded border border-gray-300 px-2 py-1"
-            value={form.nombreCompleto}
-            onChange={(e) => campo("nombreCompleto", e.target.value)}
-            required
-          />
-        </div>
-        <div>
-          <label className="mb-1 block text-sm font-medium">Correo (opcional)</label>
-          <input
-            type="email"
-            className="w-full rounded border border-gray-300 px-2 py-1"
-            value={form.correo}
-            onChange={(e) => campo("correo", e.target.value)}
-          />
-        </div>
-        <div>
-          <label className="mb-1 block text-sm font-medium">Rol</label>
-          <select
-            className="w-full rounded border border-gray-300 px-2 py-1"
-            value={form.idRol}
-            onChange={(e) => campo("idRol", e.target.value)}
-            required
-          >
-            <option value="">Seleccione un rol...</option>
-            {roles.map((r) => (
-              <option key={r.idRol} value={r.idRol}>
-                {r.nombre}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="col-span-2 flex gap-2">
-          <button type="submit" className="rounded bg-slate-800 px-4 py-1.5 text-white hover:bg-slate-700">
-            {editando ? "Guardar cambios" : "Crear usuario"}
-          </button>
-          {editando && (
-            <button
-              type="button"
-              onClick={() => setForm(VACIO)}
-              className="rounded border border-slate-800 px-4 py-1.5 hover:bg-slate-100"
-            >
-              Cancelar
-            </button>
-          )}
-        </div>
-      </form>
-
-      <table className="w-full max-w-4xl overflow-hidden rounded bg-white shadow">
-        <thead className="bg-slate-100 text-left text-sm">
-          <tr>
-            <th className="px-3 py-2">Usuario</th>
-            <th className="px-3 py-2">Nombre</th>
-            <th className="px-3 py-2">Correo</th>
-            <th className="px-3 py-2">Rol</th>
-            <th className="px-3 py-2">Estado</th>
-            <th className="px-3 py-2"></th>
-          </tr>
-        </thead>
-        <tbody>
-          {lista.map((u) => (
-            <tr key={u.idUsuario} className={`border-t text-sm ${u.activo ? "" : "text-gray-400"}`}>
-              <td className="px-3 py-2 font-mono">{u.nombreUsuario}</td>
-              <td className="px-3 py-2">{u.nombreCompleto}</td>
-              <td className="px-3 py-2">{u.correo}</td>
-              <td className="px-3 py-2">{u.rol}</td>
-              <td className="px-3 py-2">{u.activo ? "Activo" : "Inactivo"}</td>
-              <td className="flex gap-2 px-3 py-2">
-                <button
-                  onClick={() => editar(u)}
-                  className="rounded border border-slate-800 px-2 py-1 hover:bg-slate-100"
-                >
-                  Editar
-                </button>
-                <button
-                  onClick={() => alternarActivo(u)}
-                  disabled={u.idUsuario === miId}
-                  className="rounded border border-slate-800 px-2 py-1 hover:bg-slate-100 disabled:opacity-40"
-                >
-                  {u.activo ? "Desactivar" : "Activar"}
-                </button>
-              </td>
+      <div className="card max-w-5xl overflow-hidden">
+        <table className="tabla">
+          <thead>
+            <tr>
+              <th>Usuario</th>
+              <th>Nombre</th>
+              <th>Correo</th>
+              <th>Rol</th>
+              <th>Estado</th>
+              <th className="w-44"></th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {lista.map((u) => (
+              <tr key={u.idUsuario} className={u.activo ? "" : "text-muted"}>
+                <td className="font-mono">{u.nombreUsuario}</td>
+                <td>{u.nombreCompleto}</td>
+                <td>{u.correo}</td>
+                <td>{u.rol}</td>
+                <td>
+                  <span className={`badge ${u.activo ? "badge-ok" : "badge-gris"}`}>
+                    {u.activo ? "Activo" : "Inactivo"}
+                  </span>
+                </td>
+                <td>
+                  <div className="flex gap-2">
+                    <button className="btn" onClick={() => editar(u)}>
+                      <Pencil size={14} /> Editar
+                    </button>
+                    <button
+                      className="btn"
+                      onClick={() => alternarActivo(u)}
+                      disabled={u.idUsuario === miId}
+                      title={u.idUsuario === miId ? "No puede desactivar su propio usuario" : ""}
+                    >
+                      <Power size={14} /> {u.activo ? "Desactivar" : "Activar"}
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {form && (
+        <Modal titulo={editando ? "Editar usuario" : "Nuevo usuario"} onCerrar={() => setForm(null)}>
+          <form onSubmit={guardar} className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="label">Usuario</label>
+              <input
+                className="input disabled:bg-gray-100"
+                value={form.nombreUsuario}
+                onChange={(e) => campo("nombreUsuario", e.target.value)}
+                disabled={editando}
+                required
+              />
+            </div>
+            <div>
+              <label className="label">
+                Contraseña {editando && <span className="font-normal text-muted">(vacío = no cambiar)</span>}
+              </label>
+              <input
+                type="password"
+                autoComplete="new-password"
+                className="input"
+                value={form.clave}
+                onChange={(e) => campo("clave", e.target.value)}
+                required={!editando}
+              />
+            </div>
+            <div className="col-span-2">
+              <label className="label">Nombre completo</label>
+              <input
+                className="input"
+                value={form.nombreCompleto}
+                onChange={(e) => campo("nombreCompleto", e.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <label className="label">Correo (opcional)</label>
+              <input
+                type="email"
+                className="input"
+                value={form.correo}
+                onChange={(e) => campo("correo", e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="label">Rol</label>
+              <select
+                className="input"
+                value={form.idRol}
+                onChange={(e) => campo("idRol", e.target.value)}
+                required
+              >
+                <option value="">Seleccione...</option>
+                {roles.map((r) => (
+                  <option key={r.idRol} value={r.idRol}>
+                    {r.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="col-span-2 flex justify-end gap-2 pt-2">
+              <button type="button" className="btn" onClick={() => setForm(null)}>
+                Cancelar
+              </button>
+              <button type="submit" className="btn btn-primary">
+                {editando ? "Guardar cambios" : "Crear usuario"}
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
     </div>
   );
 }

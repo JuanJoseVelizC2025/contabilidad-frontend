@@ -30,38 +30,56 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center">
-      <form onSubmit={ingresar} className="w-full max-w-sm rounded-lg bg-white p-8 shadow">
-        <h1 className="mb-1 text-2xl font-bold">Sistema de Contabilidad</h1>
-        <p className="mb-6 text-sm text-gray-500">Inicie sesión para continuar</p>
+    <div className="flex min-h-screen">
+      <div className="hidden w-1/2 flex-col justify-between bg-shell p-10 text-white lg:flex">
+        <div className="flex items-center gap-2">
+          <div className="flex h-9 w-9 items-center justify-center rounded bg-brand text-lg font-bold">C</div>
+          <span className="text-lg font-semibold tracking-wide">Contabilidad ERP</span>
+        </div>
 
-        <label className="mb-1 block text-sm font-medium">Usuario</label>
-        <input
-          className="mb-4 w-full rounded border border-gray-300 px-3 py-2"
-          value={nombreUsuario}
-          onChange={(e) => setNombreUsuario(e.target.value)}
-          required
-        />
+        <div>
+          <h2 className="mb-4 text-3xl font-semibold leading-tight">
+            Control contable claro, seguro y en tiempo real
+          </h2>
+          <ul className="space-y-2 text-slate-300">
+            <li>Nomenclatura contable y partidas validadas al centavo</li>
+            <li>Libro Diario, Mayor General y Estado de Resultados</li>
+            <li>Acceso por roles y períodos contables controlados</li>
+          </ul>
+        </div>
 
-        <label className="mb-1 block text-sm font-medium">Contraseña</label>
-        <input
-          type="password"
-          className="mb-4 w-full rounded border border-gray-300 px-3 py-2"
-          value={clave}
-          onChange={(e) => setClave(e.target.value)}
-          required
-        />
+        <p className="text-xs text-slate-400">Universidad Mariano Gálvez · Desarrollo Web</p>
+      </div>
 
-        {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+      <div className="flex flex-1 items-center justify-center p-6">
+        <form onSubmit={ingresar} className="card w-full max-w-sm p-8 shadow">
+          <h1 className="mb-1 text-2xl font-semibold">Iniciar sesión</h1>
+          <p className="mb-6 text-muted">Ingrese sus credenciales para continuar</p>
 
-        <button
-          type="submit"
-          disabled={cargando}
-          className="w-full rounded bg-slate-800 px-3 py-2 text-white hover:bg-slate-700 disabled:opacity-50"
-        >
-          {cargando ? "Ingresando..." : "Ingresar"}
-        </button>
-      </form>
+          <label className="label">Usuario</label>
+          <input
+            className="input mb-4"
+            value={nombreUsuario}
+            onChange={(e) => setNombreUsuario(e.target.value)}
+            required
+          />
+
+          <label className="label">Contraseña</label>
+          <input
+            type="password"
+            className="input mb-4"
+            value={clave}
+            onChange={(e) => setClave(e.target.value)}
+            required
+          />
+
+          {error && <p className="alerta alerta-error">{error}</p>}
+
+          <button type="submit" disabled={cargando} className="btn btn-primary w-full justify-center py-2">
+            {cargando ? "Ingresando..." : "Ingresar"}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }
