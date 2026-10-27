@@ -1,35 +1,25 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Eye, Plus, Search, X } from "lucide-react";
 import { api } from "@/lib/api";
-
-function hoy() {
-  const d = new Date();
-  const mes = String(d.getMonth() + 1).padStart(2, "0");
-  const dia = String(d.getDate()).padStart(2, "0");
-  return `${d.getFullYear()}-${mes}-${dia}`;
-}
-
-function dinero(n) {
-  return `Q ${Number(n || 0).toLocaleString("es-GT", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
-}
+import { dinero, hoy } from "@/lib/formato";
+import { Encabezado, Modal, useAviso } from "@/components/ui";
 
 const LINEA_VACIA = { idCuenta: "", debe: "", haber: "" };
+const FILTROS_VACIOS = { desde: "", hasta: "", numero: "", concepto: "", estado: "" };
 
 export default function PartidasPage() {
+  const aviso = useAviso();
   const [cuentas, setCuentas] = useState([]);
   const [lista, setLista] = useState([]);
+  const [filtros, setFiltros] = useState(FILTROS_VACIOS);
+  const [nueva, setNueva] = useState(false);
   const [fecha, setFecha] = useState(hoy());
   const [concepto, setConcepto] = useState("");
   const [lineas, setLineas] = useState([{ ...LINEA_VACIA }, { ...LINEA_VACIA }]);
-  const [filtros, setFiltros] = useState({ desde: "", hasta: "", numero: "", concepto: "", estado: "" });
   const [detalle, setDetalle] = useState(null);
   const [motivo, setMotivo] = useState("");
-  const [mensaje, setMensaje] = useState("");
-  const [error, setError] = useState("");
 
   async function cargarLista(f = filtros) {
     const params = new URLSearchParams();
@@ -39,25 +29,32 @@ export default function PartidasPage() {
     try {
       setLista(await api(`/api/partidas?${params.toString()}`));
     } catch (e) {
-      setError(e.message);
+      aviso.error(e.message);
     }
   }
 
   useEffect(() => {
     api("/api/cuentas")
       .then((c) => setCuentas(c.filter((x) => x.activa && x.aceptaMovimientos)))
-      .catch((e) => setError(e.message));
+      .catch((e) => aviso.error(e.message));
     cargarLista();
   }, []);
+
+  function abrirNueva() {
+    setFecha(hoy());
+    setConcepto("");
+    setLineas([{ ...LINEA_VACIA }, { ...LINEA_VACIA }]);
+    setNueva(true);
+  }
 
   function cambiarLinea(i, campo, valor) {
     setLineas(
       lineas.map((l, idx) => {
         if (idx !== i) return l;
-        const nueva = { ...l, [campo]: valor };
-        if (campo === "debe" && Number(valor) > 0) nueva.haber = "";
-        if (campo === "haber" && Number(valor) > 0) nueva.debe = "";
-        return nueva;
+        const nuevaLinea = { ...l, [campo]: valor };
+        if (campo === "debe" && Number(valor) > 0) nuevaLinea.haber = "";
+        if (campo === "haber" && Number(valor) > 0) nuevaLinea.debe = "";
+        return nuevaLinea;
       })
     );
   }
@@ -81,8 +78,6 @@ export default function PartidasPage() {
 
   async function guardar(e) {
     e.preventDefault();
-    setMensaje("");
-    setError("");
     try {
       const r = await api("/api/partidas", {
         method: "POST",
@@ -96,37 +91,34 @@ export default function PartidasPage() {
           })),
         },
       });
-      setMensaje(`Partida No. ${r.numero} registrada`);
-      setConcepto("");
-      setLineas([{ ...LINEA_VACIA }, { ...LINEA_VACIA }]);
+      aviso.ok(`Partida No. ${r.numero} registrada`);
+      setNueva(false);
       cargarLista();
     } catch (err) {
-      setError(err.message);
+      aviso.error(err.message);
     }
   }
 
   async function ver(id) {
-    setError("");
     try {
       setDetalle(await api(`/api/partidas/${id}`));
       setMotivo("");
     } catch (err) {
-      setError(err.message);
+      aviso.error(err.message);
     }
   }
 
   async function anular() {
-    setError("");
     try {
       await api(`/api/partidas/${detalle.idPartida}/anular`, {
         method: "PUT",
         body: { motivo },
       });
-      setMensaje(`Partida No. ${detalle.numero} anulada`);
+      aviso.ok(`Partida No. ${detalle.numero} anulada`);
       setDetalle(null);
       cargarLista();
     } catch (err) {
-      setError(err.message);
+      aviso.error(err.message);
     }
   }
 
@@ -136,181 +128,61 @@ export default function PartidasPage() {
   }
 
   function limpiarFiltros() {
-    const vacios = { desde: "", hasta: "", numero: "", concepto: "", estado: "" };
-    setFiltros(vacios);
-    cargarLista(vacios);
+    setFiltros(FILTROS_VACIOS);
+    cargarLista(FILTROS_VACIOS);
   }
 
   return (
     <div>
-      <h1 className="mb-4 text-2xl font-bold">Partidas contables</h1>
-
-      {mensaje && <p className="mb-3 rounded bg-green-100 px-3 py-2 text-sm text-green-800">{mensaje}</p>}
-      {error && <p className="mb-3 rounded bg-red-100 px-3 py-2 text-sm text-red-800">{error}</p>}
-
-      <form onSubmit={guardar} className="mb-8 max-w-5xl rounded bg-white p-4 shadow">
-        <h2 className="mb-3 font-semibold">Nueva partida</h2>
-
-        <div className="mb-4 grid grid-cols-4 gap-4">
-          <div>
-            <label className="mb-1 block text-sm font-medium">Fecha</label>
-            <input
-              type="date"
-              className="w-full rounded border border-gray-300 px-2 py-1"
-              value={fecha}
-              onChange={(e) => setFecha(e.target.value)}
-              required
-            />
-          </div>
-          <div className="col-span-3">
-            <label className="mb-1 block text-sm font-medium">Concepto</label>
-            <input
-              className="w-full rounded border border-gray-300 px-2 py-1"
-              value={concepto}
-              onChange={(e) => setConcepto(e.target.value)}
-              required
-            />
-          </div>
-        </div>
-
-        <table className="mb-3 w-full text-sm">
-          <thead className="bg-slate-100 text-left">
-            <tr>
-              <th className="px-2 py-2">Cuenta</th>
-              <th className="w-36 px-2 py-2">Debe</th>
-              <th className="w-36 px-2 py-2">Haber</th>
-              <th className="w-10 px-2 py-2"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {lineas.map((l, i) => (
-              <tr key={i} className="border-t">
-                <td className="px-2 py-1">
-                  <select
-                    className="w-full rounded border border-gray-300 px-2 py-1"
-                    value={l.idCuenta}
-                    onChange={(e) => cambiarLinea(i, "idCuenta", e.target.value)}
-                  >
-                    <option value="">Seleccione una cuenta...</option>
-                    {cuentas.map((c) => (
-                      <option key={c.idCuenta} value={c.idCuenta}>
-                        {c.codigo} - {c.nombre}
-                      </option>
-                    ))}
-                  </select>
-                </td>
-                <td className="px-2 py-1">
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    className="w-full rounded border border-gray-300 px-2 py-1 text-right"
-                    value={l.debe}
-                    onChange={(e) => cambiarLinea(i, "debe", e.target.value)}
-                  />
-                </td>
-                <td className="px-2 py-1">
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    className="w-full rounded border border-gray-300 px-2 py-1 text-right"
-                    value={l.haber}
-                    onChange={(e) => cambiarLinea(i, "haber", e.target.value)}
-                  />
-                </td>
-                <td className="px-2 py-1 text-center">
-                  <button
-                    type="button"
-                    onClick={() => quitarLinea(i)}
-                    className="text-red-600 hover:text-red-800"
-                    title="Quitar línea"
-                  >
-                    ✕
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-          <tfoot>
-            <tr className="border-t font-semibold">
-              <td className="px-2 py-2 text-right">Totales</td>
-              <td className="px-2 py-2 text-right">{dinero(totalDebe)}</td>
-              <td className="px-2 py-2 text-right">{dinero(totalHaber)}</td>
-              <td></td>
-            </tr>
-          </tfoot>
-        </table>
-
-        <div className="mb-4 flex items-center gap-4">
-          <button
-            type="button"
-            onClick={agregarLinea}
-            className="rounded border border-slate-800 px-3 py-1 text-sm hover:bg-slate-100"
-          >
-            + Agregar línea
-          </button>
-          {totalDebe + totalHaber > 0 &&
-            (cuadra ? (
-              <span className="text-sm text-green-700">La partida cuadra</span>
-            ) : (
-              <span className="text-sm text-red-700">
-                No cuadra: diferencia {dinero(Math.abs(totalDebe - totalHaber))}
-              </span>
-            ))}
-        </div>
-
-        <button
-          type="submit"
-          disabled={!puedeGuardar}
-          className="rounded bg-slate-800 px-4 py-2 text-white hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          Registrar partida
+      <Encabezado
+        titulo="Partidas contables"
+        descripcion="Registro y consulta de los movimientos contables"
+      >
+        <button className="btn btn-primary" onClick={abrirNueva}>
+          <Plus size={16} /> Nueva partida
         </button>
-      </form>
+      </Encabezado>
 
-      <h2 className="mb-3 text-lg font-semibold">Consulta de partidas</h2>
-
-      <form onSubmit={buscar} className="mb-4 flex max-w-5xl flex-wrap items-end gap-3 rounded bg-white p-4 shadow">
+      <form onSubmit={buscar} className="card mb-3 flex max-w-6xl flex-wrap items-end gap-3 p-3">
         <div>
-          <label className="mb-1 block text-xs font-medium">Desde</label>
+          <label className="label">Desde</label>
           <input
             type="date"
-            className="rounded border border-gray-300 px-2 py-1 text-sm"
+            className="input"
             value={filtros.desde}
             onChange={(e) => setFiltros({ ...filtros, desde: e.target.value })}
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium">Hasta</label>
+          <label className="label">Hasta</label>
           <input
             type="date"
-            className="rounded border border-gray-300 px-2 py-1 text-sm"
+            className="input"
             value={filtros.hasta}
             onChange={(e) => setFiltros({ ...filtros, hasta: e.target.value })}
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium">No.</label>
+          <label className="label">No.</label>
           <input
             type="number"
-            className="w-20 rounded border border-gray-300 px-2 py-1 text-sm"
+            className="input w-20"
             value={filtros.numero}
             onChange={(e) => setFiltros({ ...filtros, numero: e.target.value })}
           />
         </div>
-        <div>
-          <label className="mb-1 block text-xs font-medium">Concepto</label>
+        <div className="min-w-48 flex-1">
+          <label className="label">Concepto</label>
           <input
-            className="rounded border border-gray-300 px-2 py-1 text-sm"
+            className="input"
             value={filtros.concepto}
             onChange={(e) => setFiltros({ ...filtros, concepto: e.target.value })}
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium">Estado</label>
+          <label className="label">Estado</label>
           <select
-            className="rounded border border-gray-300 px-2 py-1 text-sm"
+            className="input"
             value={filtros.estado}
             onChange={(e) => setFiltros({ ...filtros, estado: e.target.value })}
           >
@@ -319,123 +191,238 @@ export default function PartidasPage() {
             <option value="Anulada">Anulada</option>
           </select>
         </div>
-        <button type="submit" className="rounded bg-slate-800 px-3 py-1.5 text-sm text-white hover:bg-slate-700">
-          Buscar
+        <button type="submit" className="btn btn-primary">
+          <Search size={15} /> Buscar
         </button>
-        <button
-          type="button"
-          onClick={limpiarFiltros}
-          className="rounded border border-slate-800 px-3 py-1.5 text-sm hover:bg-slate-100"
-        >
+        <button type="button" className="btn" onClick={limpiarFiltros}>
           Limpiar
         </button>
       </form>
 
-      <table className="w-full max-w-5xl overflow-hidden rounded bg-white shadow">
-        <thead className="bg-slate-100 text-left text-sm">
-          <tr>
-            <th className="px-3 py-2">Período</th>
-            <th className="px-3 py-2">No.</th>
-            <th className="px-3 py-2">Fecha</th>
-            <th className="px-3 py-2">Concepto</th>
-            <th className="px-3 py-2 text-right">Total</th>
-            <th className="px-3 py-2">Estado</th>
-            <th className="px-3 py-2"></th>
-          </tr>
-        </thead>
-        <tbody>
-          {lista.map((p) => (
-            <tr key={p.idPartida} className={`border-t text-sm ${p.estado === "Anulada" ? "text-gray-400" : ""}`}>
-              <td className="px-3 py-2">{String(p.mes).padStart(2, "0")}/{p.anio}</td>
-              <td className="px-3 py-2">{p.numero}</td>
-              <td className="px-3 py-2">{p.fecha}</td>
-              <td className="px-3 py-2">{p.concepto}</td>
-              <td className="px-3 py-2 text-right">{dinero(p.total)}</td>
-              <td className="px-3 py-2">{p.estado}</td>
-              <td className="px-3 py-2">
-                <button
-                  onClick={() => ver(p.idPartida)}
-                  className="rounded border border-slate-800 px-2 py-1 hover:bg-slate-100"
-                >
-                  Ver
-                </button>
-              </td>
-            </tr>
-          ))}
-          {lista.length === 0 && (
+      <div className="card max-w-6xl overflow-hidden">
+        <table className="tabla">
+          <thead>
             <tr>
-              <td colSpan={7} className="px-3 py-4 text-center text-sm text-gray-500">
-                No hay partidas para mostrar.
-              </td>
+              <th>Período</th>
+              <th>No.</th>
+              <th>Fecha</th>
+              <th>Concepto</th>
+              <th className="text-right">Total</th>
+              <th>Estado</th>
+              <th className="w-20"></th>
             </tr>
-          )}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {lista.map((p) => (
+              <tr key={p.idPartida} className={p.estado === "Anulada" ? "text-muted" : ""}>
+                <td>
+                  {String(p.mes).padStart(2, "0")}/{p.anio}
+                </td>
+                <td>{p.numero}</td>
+                <td>{p.fecha}</td>
+                <td>{p.concepto}</td>
+                <td className="text-right">{dinero(p.total)}</td>
+                <td>
+                  <span className={`badge ${p.estado === "Registrada" ? "badge-ok" : "badge-gris"}`}>
+                    {p.estado}
+                  </span>
+                </td>
+                <td>
+                  <button className="btn" onClick={() => ver(p.idPartida)}>
+                    <Eye size={14} /> Ver
+                  </button>
+                </td>
+              </tr>
+            ))}
+            {lista.length === 0 && (
+              <tr>
+                <td colSpan={7} className="text-center text-muted">
+                  No hay partidas para mostrar.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
 
-      {detalle && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/40 p-4">
-          <div className="max-h-[90vh] w-full max-w-2xl overflow-auto rounded bg-white p-6 shadow-lg">
-            <div className="mb-3 flex items-start justify-between">
+      {nueva && (
+        <Modal titulo="Nueva partida contable" onCerrar={() => setNueva(false)} ancho="max-w-4xl">
+          <form onSubmit={guardar}>
+            <div className="mb-4 grid grid-cols-4 gap-3">
               <div>
-                <h3 className="text-lg font-bold">Partida No. {detalle.numero}</h3>
-                <p className="text-sm text-gray-600">{detalle.fecha}</p>
+                <label className="label">Fecha</label>
+                <input
+                  type="date"
+                  className="input"
+                  value={fecha}
+                  onChange={(e) => setFecha(e.target.value)}
+                  required
+                />
               </div>
-              <button onClick={() => setDetalle(null)} className="text-xl text-gray-500 hover:text-gray-800">
-                ✕
-              </button>
+              <div className="col-span-3">
+                <label className="label">Concepto</label>
+                <input
+                  className="input"
+                  value={concepto}
+                  onChange={(e) => setConcepto(e.target.value)}
+                  required
+                />
+              </div>
             </div>
 
-            <p className="mb-3">{detalle.concepto}</p>
+            <div className="mb-3 overflow-hidden rounded border border-line">
+              <table className="tabla">
+                <thead>
+                  <tr>
+                    <th>Cuenta</th>
+                    <th className="w-36">Debe</th>
+                    <th className="w-36">Haber</th>
+                    <th className="w-10"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {lineas.map((l, i) => (
+                    <tr key={i}>
+                      <td>
+                        <select
+                          className="input"
+                          value={l.idCuenta}
+                          onChange={(e) => cambiarLinea(i, "idCuenta", e.target.value)}
+                        >
+                          <option value="">Seleccione una cuenta...</option>
+                          {cuentas.map((c) => (
+                            <option key={c.idCuenta} value={c.idCuenta}>
+                              {c.codigo} - {c.nombre}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          className="input text-right"
+                          value={l.debe}
+                          onChange={(e) => cambiarLinea(i, "debe", e.target.value)}
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          className="input text-right"
+                          value={l.haber}
+                          onChange={(e) => cambiarLinea(i, "haber", e.target.value)}
+                        />
+                      </td>
+                      <td className="text-center">
+                        <button
+                          type="button"
+                          onClick={() => quitarLinea(i)}
+                          className="text-red-600 hover:text-red-800"
+                          title="Quitar línea"
+                        >
+                          <X size={16} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="font-semibold">
+                    <td className="text-right">Totales</td>
+                    <td className="text-right">{dinero(totalDebe)}</td>
+                    <td className="text-right">{dinero(totalHaber)}</td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
 
-            <table className="mb-3 w-full text-sm">
-              <thead className="bg-slate-100 text-left">
+            <div className="mb-4 flex items-center gap-4">
+              <button type="button" className="btn" onClick={agregarLinea}>
+                <Plus size={14} /> Agregar línea
+              </button>
+              {totalDebe + totalHaber > 0 &&
+                (cuadra ? (
+                  <span className="badge badge-ok">La partida cuadra</span>
+                ) : (
+                  <span className="badge badge-error">
+                    No cuadra: diferencia {dinero(Math.abs(totalDebe - totalHaber))}
+                  </span>
+                ))}
+            </div>
+
+            <div className="flex justify-end gap-2 border-t border-line pt-3">
+              <button type="button" className="btn" onClick={() => setNueva(false)}>
+                Cancelar
+              </button>
+              <button type="submit" className="btn btn-primary" disabled={!puedeGuardar}>
+                Registrar partida
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {detalle && (
+        <Modal titulo={`Partida No. ${detalle.numero}`} onCerrar={() => setDetalle(null)} ancho="max-w-2xl">
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-muted">{detalle.fecha}</p>
+            <span className={`badge ${detalle.estado === "Registrada" ? "badge-ok" : "badge-gris"}`}>
+              {detalle.estado}
+            </span>
+          </div>
+          <p className="mb-3 font-medium">{detalle.concepto}</p>
+
+          <div className="mb-3 overflow-hidden rounded border border-line">
+            <table className="tabla">
+              <thead>
                 <tr>
-                  <th className="px-2 py-1">Cuenta</th>
-                  <th className="px-2 py-1 text-right">Debe</th>
-                  <th className="px-2 py-1 text-right">Haber</th>
+                  <th>Cuenta</th>
+                  <th className="text-right">Debe</th>
+                  <th className="text-right">Haber</th>
                 </tr>
               </thead>
               <tbody>
                 {detalle.detalle.map((d) => (
-                  <tr key={d.idDetalle} className="border-t">
-                    <td className="px-2 py-1">{d.codigo} - {d.cuentaNombre}</td>
-                    <td className="px-2 py-1 text-right">{d.debe > 0 ? dinero(d.debe) : ""}</td>
-                    <td className="px-2 py-1 text-right">{d.haber > 0 ? dinero(d.haber) : ""}</td>
+                  <tr key={d.idDetalle}>
+                    <td>
+                      {d.codigo} - {d.cuentaNombre}
+                    </td>
+                    <td className="text-right">{d.debe > 0 ? dinero(d.debe) : ""}</td>
+                    <td className="text-right">{d.haber > 0 ? dinero(d.haber) : ""}</td>
                   </tr>
                 ))}
               </tbody>
               <tfoot>
-                <tr className="border-t font-semibold">
-                  <td className="px-2 py-1 text-right">Totales</td>
-                  <td className="px-2 py-1 text-right">{dinero(detalle.totalDebe)}</td>
-                  <td className="px-2 py-1 text-right">{dinero(detalle.totalHaber)}</td>
+                <tr className="font-semibold">
+                  <td className="text-right">Totales</td>
+                  <td className="text-right">{dinero(detalle.totalDebe)}</td>
+                  <td className="text-right">{dinero(detalle.totalHaber)}</td>
                 </tr>
               </tfoot>
             </table>
-
-            {detalle.estado === "Anulada" ? (
-              <p className="rounded bg-red-100 px-3 py-2 text-sm text-red-800">
-                Partida anulada. Motivo: {detalle.motivoAnulacion}
-              </p>
-            ) : (
-              <div className="flex gap-2">
-                <input
-                  className="flex-1 rounded border border-gray-300 px-2 py-1 text-sm"
-                  placeholder="Motivo de anulación"
-                  value={motivo}
-                  onChange={(e) => setMotivo(e.target.value)}
-                />
-                <button
-                  onClick={anular}
-                  disabled={!motivo.trim()}
-                  className="rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700 disabled:opacity-40"
-                >
-                  Anular partida
-                </button>
-              </div>
-            )}
           </div>
-        </div>
+
+          {detalle.estado === "Anulada" ? (
+            <p className="alerta alerta-error mb-0">Partida anulada. Motivo: {detalle.motivoAnulacion}</p>
+          ) : (
+            <div className="flex gap-2">
+              <input
+                className="input flex-1"
+                placeholder="Motivo de anulación"
+                value={motivo}
+                onChange={(e) => setMotivo(e.target.value)}
+              />
+              <button className="btn btn-danger" onClick={anular} disabled={!motivo.trim()}>
+                Anular partida
+              </button>
+            </div>
+          )}
+        </Modal>
       )}
     </div>
   );
