@@ -6,6 +6,7 @@ import { api } from "@/lib/api";
 import { dinero, hoy } from "@/lib/formato";
 import { Encabezado, useAviso } from "@/components/ui";
 import EncabezadoReporte from "@/components/EncabezadoReporte";
+import BotonExcel from "@/components/BotonExcel";
 
 export default function BalanzaPage() {
   const aviso = useAviso();
@@ -41,9 +42,12 @@ export default function BalanzaPage() {
             Generar
           </button>
           {datos && (
-            <button type="button" className="btn" onClick={() => window.print()}>
-              <Printer size={15} /> Imprimir / PDF
-            </button>
+            <>
+              <button type="button" className="btn" onClick={() => window.print()}>
+                <Printer size={15} /> Imprimir / PDF
+              </button>
+              <BotonExcel archivo="balanza-comprobacion" titulo="Balanza de Comprobación" />
+            </>
           )}
         </form>
       </div>

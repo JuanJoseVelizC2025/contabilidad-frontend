@@ -9,6 +9,7 @@ import {
   Building2,
   Calendar,
   FileText,
+  History,
   Landmark,
   LayoutDashboard,
   ListTree,
@@ -37,6 +38,7 @@ const GRUPOS = [
       { href: "/parametros", etiqueta: "Parámetros", icono: Settings, roles: ADMIN },
       { href: "/periodos", etiqueta: "Períodos contables", icono: Calendar, roles: ADMIN },
       { href: "/usuarios", etiqueta: "Usuarios", icono: Users, roles: ADMIN },
+      { href: "/bitacora", etiqueta: "Bitácora", icono: History, roles: ADMIN },
     ],
   },
   {

@@ -6,6 +6,7 @@ import { api } from "@/lib/api";
 import { dinero, hoy, primerDiaMes } from "@/lib/formato";
 import { Encabezado, useAviso } from "@/components/ui";
 import EncabezadoReporte from "@/components/EncabezadoReporte";
+import BotonExcel from "@/components/BotonExcel";
 
 export default function MayorPage() {
   const aviso = useAviso();
@@ -61,9 +62,12 @@ export default function MayorPage() {
             Generar
           </button>
           {datos && (
-            <button type="button" className="btn" onClick={() => window.print()}>
-              <Printer size={15} /> Imprimir / PDF
-            </button>
+            <>
+              <button type="button" className="btn" onClick={() => window.print()}>
+                <Printer size={15} /> Imprimir / PDF
+              </button>
+              <BotonExcel archivo="libro-mayor" titulo="Libro Mayor General" />
+            </>
           )}
         </form>
       </div>

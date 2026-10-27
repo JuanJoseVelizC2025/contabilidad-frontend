@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 
+
 export default function EncabezadoReporte({ titulo, subtitulo }) {
   const [empresa, setEmpresa] = useState({ nombre: "", nit: "" });
 
