@@ -9,6 +9,7 @@ import {
   BookOpen,
   Building2,
   Calendar,
+  Contact,
   FileText,
   History,
   Landmark,
@@ -16,9 +17,12 @@ import {
   ListTree,
   LogOut,
   Menu,
+  Receipt,
   Scale,
   Settings,
+  ShoppingCart,
   TrendingUp,
+  Truck,
   Users,
 } from "lucide-react";
 import { api, obtenerUsuario, cerrarSesion } from "@/lib/api";
@@ -50,6 +54,17 @@ const GRUPOS = [
       { href: "/bancos", etiqueta: "Bancos", icono: Banknote, roles: CONTABLES },
     ],
   },
+
+    {
+    titulo: "Ventas y compras",
+    items: [
+      { href: "/clientes", etiqueta: "Clientes", icono: Contact, roles: CONTABLES },
+      { href: "/ventas", etiqueta: "Facturas de venta", icono: Receipt, roles: CONTABLES },
+      { href: "/proveedores", etiqueta: "Proveedores", icono: Truck, roles: CONTABLES },
+      { href: "/compras", etiqueta: "Facturas de compra", icono: ShoppingCart, roles: CONTABLES },
+    ],
+  },
+
   {
     titulo: "Reportes",
     items: [
