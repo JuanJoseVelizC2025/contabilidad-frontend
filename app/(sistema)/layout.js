@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
+  Banknote,
   BookMarked,
   BookOpen,
   Building2,
@@ -46,6 +47,7 @@ const GRUPOS = [
     items: [
       { href: "/cuentas", etiqueta: "Nomenclatura contable", icono: ListTree, roles: CONTABLES },
       { href: "/partidas", etiqueta: "Partidas contables", icono: FileText, roles: CONTABLES },
+      { href: "/bancos", etiqueta: "Bancos", icono: Banknote, roles: CONTABLES },
     ],
   },
   {

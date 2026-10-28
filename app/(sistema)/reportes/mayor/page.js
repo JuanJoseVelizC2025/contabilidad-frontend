@@ -7,6 +7,7 @@ import { dinero, hoy, primerDiaMes } from "@/lib/formato";
 import { Encabezado, useAviso } from "@/components/ui";
 import EncabezadoReporte from "@/components/EncabezadoReporte";
 import BotonExcel from "@/components/BotonExcel";
+import { GraficasMayor } from "@/components/GraficasReportes";
 
 export default function MayorPage() {
   const aviso = useAviso();
@@ -75,6 +76,7 @@ export default function MayorPage() {
       {datos && (
         <div>
           <EncabezadoReporte titulo="Libro Mayor General" subtitulo={`Del ${datos.desde} al ${datos.hasta}`} />
+          <GraficasMayor datos={datos} />
 
           {datos.cuentas.length === 0 && <p className="text-muted">No hay movimientos en ese rango.</p>}
 

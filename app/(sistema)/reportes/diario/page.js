@@ -7,6 +7,7 @@ import { dinero, hoy, primerDiaMes } from "@/lib/formato";
 import { Encabezado, useAviso } from "@/components/ui";
 import EncabezadoReporte from "@/components/EncabezadoReporte";
 import BotonExcel from "@/components/BotonExcel";
+import { GraficasDiario } from "@/components/GraficasReportes";
 
 export default function DiarioPage() {
   const aviso = useAviso();
@@ -55,6 +56,7 @@ export default function DiarioPage() {
       {datos && (
         <div>
           <EncabezadoReporte titulo="Libro Diario" subtitulo={`Del ${datos.desde} al ${datos.hasta}`} />
+          <GraficasDiario datos={datos} />
 
           {datos.partidas.length === 0 ? (
             <p className="text-muted">No hay partidas en ese rango.</p>

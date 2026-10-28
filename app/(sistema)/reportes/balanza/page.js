@@ -7,6 +7,7 @@ import { dinero, hoy } from "@/lib/formato";
 import { Encabezado, useAviso } from "@/components/ui";
 import EncabezadoReporte from "@/components/EncabezadoReporte";
 import BotonExcel from "@/components/BotonExcel";
+import { GraficasBalanza } from "@/components/GraficasReportes";
 
 export default function BalanzaPage() {
   const aviso = useAviso();
@@ -55,6 +56,7 @@ export default function BalanzaPage() {
       {datos && (
         <div>
           <EncabezadoReporte titulo="Balanza de comprobación" subtitulo={`Al ${datos.hasta}`} />
+          <GraficasBalanza datos={datos} />
 
           {datos.cuentas.length === 0 ? (
             <p className="text-muted">No hay movimientos a esa fecha.</p>

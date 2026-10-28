@@ -9,6 +9,37 @@ function aNumero(texto) {
   return Number(t.replace(/^Q\s*/, "").replace(/,/g, ""));
 }
 
+async function svgAPng(svg) {
+  const caja = svg.viewBox.baseVal;
+  const ancho = caja.width;
+  const alto = caja.height;
+
+  const clon = svg.cloneNode(true);
+  clon.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+  clon.setAttribute("width", ancho);
+  clon.setAttribute("height", alto);
+
+  const texto = new XMLSerializer().serializeToString(clon);
+  const url = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(texto)}`;
+
+  const imagen = new Image();
+  await new Promise((resolver, rechazar) => {
+    imagen.onload = resolver;
+    imagen.onerror = rechazar;
+    imagen.src = url;
+  });
+
+  const lienzo = document.createElement("canvas");
+  lienzo.width = ancho * 2;
+  lienzo.height = alto * 2;
+  const ctx = lienzo.getContext("2d");
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, lienzo.width, lienzo.height);
+  ctx.drawImage(imagen, 0, 0, lienzo.width, lienzo.height);
+
+  return { base64: lienzo.toDataURL("image/png"), ancho, alto };
+}
+
 async function exportar(archivo, titulo) {
   const modulo = await import("exceljs/dist/exceljs.min.js");
   const ExcelJS = modulo.default ?? modulo;
@@ -60,6 +91,24 @@ async function exportar(archivo, titulo) {
   anchos.forEach((ancho, i) => {
     if (ancho) hoja.getColumn(i).width = ancho;
   });
+
+  const graficas = [...document.querySelectorAll("main svg[data-grafica]")].filter(
+    (svg) => svg.getClientRects().length > 0
+  );
+
+  if (graficas.length > 0) {
+    const hojaG = libro.addWorksheet("Gráficas");
+    const cab = hojaG.addRow([`${titulo}: gráficas`]);
+    cab.font = { bold: true, size: 14 };
+    let fila = 2;
+
+    for (const svg of graficas) {
+      const png = await svgAPng(svg);
+      const id = libro.addImage({ base64: png.base64, extension: "png" });
+      hojaG.addImage(id, { tl: { col: 0, row: fila }, ext: { width: png.ancho, height: png.alto } });
+      fila += Math.ceil(png.alto / 20) + 2;
+    }
+  }
 
   const buffer = await libro.xlsx.writeBuffer();
   const blob = new Blob([buffer], {

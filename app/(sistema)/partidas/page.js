@@ -206,6 +206,7 @@ export default function PartidasPage() {
               <th>Período</th>
               <th>No.</th>
               <th>Fecha</th>
+              <th>Origen</th>
               <th>Concepto</th>
               <th className="text-right">Total</th>
               <th>Estado</th>
@@ -220,6 +221,9 @@ export default function PartidasPage() {
                 </td>
                 <td>{p.numero}</td>
                 <td>{p.fecha}</td>
+                 <td>
+                  <span className="badge badge-gris">{p.origen}</span>
+                </td>
                 <td>{p.concepto}</td>
                 <td className="text-right">{dinero(p.total)}</td>
                 <td>
@@ -236,7 +240,7 @@ export default function PartidasPage() {
             ))}
             {lista.length === 0 && (
               <tr>
-                <td colSpan={7} className="text-center text-muted">
+                <td colSpan={8} className="text-center text-muted">
                   No hay partidas para mostrar.
                 </td>
               </tr>

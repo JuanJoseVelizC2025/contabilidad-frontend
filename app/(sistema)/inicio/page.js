@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api, obtenerUsuario } from "@/lib/api";
-import { dinero } from "@/lib/formato";
+import { dinero, hoy } from "@/lib/formato";
+import { Barras, Dona, agruparTop } from "@/components/Graficas";
 
 const MESES = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
 
@@ -17,49 +18,11 @@ function Kpi({ titulo, valor, detalle, color }) {
   );
 }
 
-function Grafica({ meses }) {
-  const max = Math.max(1, ...meses.flatMap((m) => [m.ingresos, m.egresos]));
-  const alto = (v) => `${(Math.max(v, 0) / max) * 100}%`;
-
-  return (
-    <div>
-      <div className="flex h-44 items-end gap-4 border-b border-line px-2">
-        {meses.map((m) => (
-          <div key={`${m.anio}-${m.mes}`} className="flex h-full flex-1 items-end justify-center gap-1">
-            <div
-              title={`Ingresos ${dinero(m.ingresos)}`}
-              className="w-5 rounded-t bg-brand"
-              style={{ height: alto(m.ingresos) }}
-            />
-            <div
-              title={`Egresos ${dinero(m.egresos)}`}
-              className="w-5 rounded-t bg-amber-500"
-              style={{ height: alto(m.egresos) }}
-            />
-          </div>
-        ))}
-      </div>
-      <div className="mt-1 flex gap-4 px-2">
-        {meses.map((m) => (
-          <span key={`${m.anio}-${m.mes}`} className="flex-1 text-center text-xs text-muted">
-            {MESES[m.mes - 1]}
-          </span>
-        ))}
-      </div>
-      <div className="mt-3 flex gap-4 text-xs text-muted">
-        <span className="flex items-center gap-1">
-          <span className="inline-block h-2.5 w-2.5 rounded-sm bg-brand" /> Ingresos
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="inline-block h-2.5 w-2.5 rounded-sm bg-amber-500" /> Costos y gastos
-        </span>
-      </div>
-    </div>
-  );
-}
-
 export default function InicioPage() {
   const [datos, setDatos] = useState(null);
+  const [estado, setEstado] = useState(null);
+  const [balance, setBalance] = useState(null);
+  const [bancos, setBancos] = useState(null);
   const [usuario, setUsuario] = useState(null);
   const [saludo, setSaludo] = useState("Bienvenido");
   const [error, setError] = useState("");
@@ -73,8 +36,40 @@ export default function InicioPage() {
       .catch((e) => setError(e.message));
   }, []);
 
+  useEffect(() => {
+    if (!datos?.periodo) return;
+    api(`/api/reportes/estado-resultados?idPeriodo=${datos.periodo.idPeriodo}`)
+      .then(setEstado)
+      .catch(() => {});
+    api(`/api/reportes/balance-general?hasta=${hoy()}`)
+      .then(setBalance)
+      .catch(() => {});
+    api("/api/bancos/cuentas")
+      .then(setBancos)
+      .catch(() => {});
+  }, [datos]);
+
   const puedeRegistrar = usuario && ["Administrador", "Contador"].includes(usuario.rol);
   const p = datos?.periodo;
+
+  const meses = datos
+    ? datos.meses.map((m) => ({ etiqueta: MESES[m.mes - 1], ingresos: m.ingresos, egresos: m.egresos }))
+    : [];
+  const gastos = estado
+    ? agruparTop(
+        (estado.gastos.cuentas.length ? estado.gastos.cuentas : estado.costos.cuentas).map((c) => ({
+          etiqueta: c.cuenta,
+          valor: c.saldo,
+        })),
+        6
+      )
+    : [];
+  const activos = balance
+    ? agruparTop(balance.activo.cuentas.map((c) => ({ etiqueta: c.nombre, valor: c.saldo })), 6)
+    : [];
+  const saldosBanco = bancos
+    ? bancos.filter((b) => b.activa).map((b) => ({ etiqueta: b.banco.replace("Banco ", ""), saldo: b.saldo }))
+    : [];
 
   return (
     <div>
@@ -125,41 +120,50 @@ export default function InicioPage() {
             />
           </div>
 
-          <div className="mb-4 grid grid-cols-3 gap-4">
-            <div className="card col-span-2 p-4">
-              <h2 className="mb-3 font-semibold">Ingresos y egresos de los últimos 6 meses</h2>
-              <Grafica meses={datos.meses} />
-            </div>
-
-            <div className="card p-4">
-              <h2 className="mb-3 font-semibold">Información del sistema</h2>
-              <dl className="space-y-3 text-sm">
-                <div className="flex justify-between">
-                  <dt className="text-muted">Período actual</dt>
-                  <dd>
-                    {p ? (
-                      <span className={`badge ${p.estado === "Abierto" ? "badge-ok" : "badge-gris"}`}>
-                        {String(p.mes).padStart(2, "0")}/{p.anio} · {p.estado}
-                      </span>
-                    ) : (
-                      "Sin períodos"
-                    )}
-                  </dd>
-                </div>
-                <div className="flex justify-between">
-                  <dt className="text-muted">Cuentas activas</dt>
-                  <dd className="font-medium">{datos.cuentasActivas}</dd>
-                </div>
-                <div className="flex justify-between">
-                  <dt className="text-muted">Usuarios activos</dt>
-                  <dd className="font-medium">{datos.usuariosActivos}</dd>
-                </div>
-                <div className="flex justify-between">
-                  <dt className="text-muted">Partidas anuladas</dt>
-                  <dd className="font-medium">{datos.anuladas}</dd>
-                </div>
-              </dl>
-            </div>
+          <div className="mb-4 grid grid-cols-2 gap-4">
+            <Barras
+              titulo="Ingresos y egresos de los últimos 6 meses"
+              datos={meses}
+              series={[
+                { clave: "ingresos", nombre: "Ingresos", color: "#0a6ed1" },
+                { clave: "egresos", nombre: "Costos y gastos", color: "#e9730c" },
+              ]}
+            />
+            <Dona titulo="Composición de gastos del período" datos={gastos} centro="Gastos" />
+            <Dona titulo="Composición del activo" datos={activos} centro="Activo" />
+            {bancos && saldosBanco.length > 0 ? (
+              <Barras
+                titulo="Saldo por banco"
+                datos={saldosBanco}
+                series={[{ clave: "saldo", nombre: "Saldo", color: "#107e3e" }]}
+              />
+            ) : (
+              <div className="card p-4">
+                <h2 className="mb-3 font-semibold">Información del sistema</h2>
+                <dl className="space-y-3 text-sm">
+                  <div className="flex justify-between">
+                    <dt className="text-muted">Período actual</dt>
+                    <dd>
+                      {p ? (
+                        <span className={`badge ${p.estado === "Abierto" ? "badge-ok" : "badge-gris"}`}>
+                          {String(p.mes).padStart(2, "0")}/{p.anio} · {p.estado}
+                        </span>
+                      ) : (
+                        "Sin períodos"
+                      )}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between">
+                    <dt className="text-muted">Cuentas activas</dt>
+                    <dd className="font-medium">{datos.cuentasActivas}</dd>
+                  </div>
+                  <div className="flex justify-between">
+                    <dt className="text-muted">Usuarios activos</dt>
+                    <dd className="font-medium">{datos.usuariosActivos}</dd>
+                  </div>
+                </dl>
+              </div>
+            )}
           </div>
 
           <div className="card overflow-hidden">

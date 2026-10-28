@@ -7,6 +7,7 @@ import { dinero, hoy } from "@/lib/formato";
 import { Encabezado, useAviso } from "@/components/ui";
 import EncabezadoReporte from "@/components/EncabezadoReporte";
 import BotonExcel from "@/components/BotonExcel";
+import { GraficasBalance } from "@/components/GraficasReportes";
 
 function Seccion({ titulo, bloque, extra }) {
   return (
@@ -85,6 +86,7 @@ export default function BalanceGeneralPage() {
       {datos && (
         <div>
           <EncabezadoReporte titulo="Balance General" subtitulo={`Al ${datos.hasta}`} />
+          <GraficasBalance datos={datos} />
 
           <div className="card max-w-4xl overflow-hidden print:border-0">
             <table className="tabla">

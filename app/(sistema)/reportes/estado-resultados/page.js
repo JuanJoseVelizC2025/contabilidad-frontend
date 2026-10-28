@@ -7,6 +7,7 @@ import { dinero, hoy, primerDiaMes } from "@/lib/formato";
 import { Encabezado, useAviso } from "@/components/ui";
 import EncabezadoReporte from "@/components/EncabezadoReporte";
 import BotonExcel from "@/components/BotonExcel";
+import { GraficasEstado } from "@/components/GraficasReportes";
 
 function Seccion({ titulo, bloque }) {
   return (
@@ -118,6 +119,7 @@ export default function EstadoResultadosPage() {
       {datos && (
         <div>
           <EncabezadoReporte titulo="Estado de Resultados" subtitulo={`Del ${datos.desde} al ${datos.hasta}`} />
+          <GraficasEstado datos={datos} />
 
           <div className="card max-w-4xl overflow-hidden print:border-0">
             <table className="tabla">
