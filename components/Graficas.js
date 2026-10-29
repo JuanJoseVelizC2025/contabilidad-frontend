@@ -2,7 +2,7 @@
 
 import { dinero } from "@/lib/formato";
 
-export const COLORES = ["#0a6ed1", "#e9730c", "#107e3e", "#5b738b", "#bb0000", "#8e44ad", "#16a3b8", "#c9a227"];
+export const COLORES = ["#1661BE", "#00B9F2", "#0C7ECF", "#e9730c", "#107e3e", "#bb0000", "#8e44ad", "#c9a227"];
 
 export function agruparTop(items, n) {
   const orden = [...items].filter((i) => i.valor > 0).sort((a, b) => b.valor - a.valor);

@@ -16,6 +16,42 @@ const TIPOS = [
 ];
 
 const BANCOS_GT = ["Banco Industrial", "Banco BAC Credomatic", "Banrural", "Banco G&T Continental", "Bantrab"];
+const BANCO_ESTILO = [
+  { clave: "industrial", color: "#1B4F9C", sigla: "BI" },
+  { clave: "bac", color: "#D71920", sigla: "BAC" },
+  { clave: "banrural", color: "#00954A", sigla: "BR" },
+  { clave: "g&t", color: "#0A3D7A", sigla: "G&T" },
+  { clave: "bantrab", color: "#E4A010", sigla: "BT" },
+];
+
+function estiloBanco(nombre) {
+  const n = nombre.toLowerCase();
+  const e = BANCO_ESTILO.find((b) => n.includes(b.clave));
+  if (e) return e;
+  const sigla = nombre
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0])
+    .join("")
+    .toUpperCase();
+  return { color: "#0C7ECF", sigla };
+}
+
+function SelloBanco({ nombre, grande }) {
+  const e = estiloBanco(nombre);
+  return (
+    <span
+      style={{ background: e.color }}
+      className={`inline-flex shrink-0 items-center justify-center rounded-md font-bold text-white ${
+        grande ? "h-10 w-10 text-sm" : "h-7 w-7 text-[10px]"
+      }`}
+    >
+      {e.sigla}
+    </span>
+  );
+}
+
 
 function tipoInfo(valor) {
   return TIPOS.find((t) => t.valor === valor) || TIPOS[0];
@@ -175,7 +211,7 @@ export default function BancosPage() {
         </button>
       </Encabezado>
 
-      <div className="mb-4 grid max-w-6xl grid-cols-4 gap-3">
+            <div className="mb-4 grid max-w-6xl grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <div className="card p-4" style={{ borderTop: "3px solid #0a6ed1" }}>
           <p className="text-xs uppercase tracking-wide text-muted">Saldo total en bancos</p>
           <p className="mt-1 text-2xl font-semibold">{dinero(totalSaldo)}</p>
@@ -185,15 +221,21 @@ export default function BancosPage() {
           <button
             key={b.idCuentaBancaria}
             onClick={() => seleccionarBanco(b.idCuentaBancaria)}
-            className={`card p-4 text-left hover:bg-slate-50 ${
+            style={{ borderTop: `4px solid ${estiloBanco(b.banco).color}` }}
+            className={`card p-4 text-left transition hover:-translate-y-0.5 hover:shadow-md ${
               String(filtros.idCuentaBancaria) === String(b.idCuentaBancaria) ? "ring-2 ring-brand" : ""
             }`}
           >
-            <p className="text-sm font-semibold">{b.banco}</p>
-            <p className="text-xs text-muted">
-              {b.tipoCuenta} · {b.numeroCuenta}
-            </p>
-            <p className="mt-1 text-xl font-semibold">{dinero(b.saldo)}</p>
+            <div className="flex items-center gap-3">
+              <SelloBanco nombre={b.banco} grande />
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold">{b.banco}</p>
+                <p className="truncate text-xs text-muted">
+                  {b.tipoCuenta} · {b.numeroCuenta}
+                </p>
+              </div>
+            </div>
+            <p className="mt-3 text-xl font-semibold">{dinero(b.saldo)}</p>
             <p className="mt-1 font-mono text-[11px] text-muted">{b.codigo}</p>
           </button>
         ))}
@@ -238,7 +280,7 @@ export default function BancosPage() {
         </button>
       </div>
 
-      <div className="card max-w-6xl overflow-hidden">
+      <div className="card max-w-6xl overflow-x-auto">
         <table className="tabla">
           <thead>
             <tr>
@@ -257,12 +299,17 @@ export default function BancosPage() {
             {movs.map((m) => (
               <tr key={m.idMovimiento} className={m.estado === "Anulado" ? "text-muted line-through" : ""}>
                 <td className="whitespace-nowrap">{m.fecha}</td>
-                <td>
-                  {m.banco}
-                  <div className="text-xs text-muted">{m.numeroCuenta}</div>
+                                <td>
+                  <div className="flex items-center gap-2">
+                    <SelloBanco nombre={m.banco} />
+                    <div>
+                      {m.banco}
+                      <div className="text-xs text-muted">{m.numeroCuenta}</div>
+                    </div>
+                  </div>
                 </td>
                 <td>
-                  <span className={`badge ${tipoInfo(m.tipo).clase}`}>{tipoInfo(m.tipo).etiqueta}</span>
+                <span className={`badge ${tipoInfo(m.tipo).clase}`}>{tipoInfo(m.tipo).etiqueta}</span>
                 </td>
                 <td>{m.referencia}</td>
                 <td>{m.concepto}</td>
