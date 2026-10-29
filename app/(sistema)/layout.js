@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { api, obtenerUsuario, cerrarSesion } from "@/lib/api";
 import { AvisoProvider } from "@/components/ui";
+import Logo from "@/components/Logo";
 
 const TODOS = ["Administrador", "Contador", "Consulta"];
 const ADMIN = ["Administrador"];
@@ -189,7 +190,7 @@ export default function SistemaLayout({ children }) {
     <div className="flex min-h-screen flex-col">
       <header
         className="sticky top-0 z-40 flex h-12 shrink-0 items-center gap-3 px-3 text-white print:hidden"
-        style={{ background: "linear-gradient(90deg, #0b2a5b 0%, #1661be 100%)" }}
+        style={{ background: "#0b2a5b" }}
       >
         <button
           onClick={alternarMenu}
@@ -200,10 +201,7 @@ export default function SistemaLayout({ children }) {
           <Menu size={20} />
         </button>
 
-        <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded bg-accent text-sm font-bold">C</div>
-          <span className="font-semibold tracking-wide">Contabilidad ERP</span>
-        </div>
+        <Logo size={28} claro />
 
         <div className="ml-4 hidden items-center gap-2 text-sm text-white/80 md:flex">
           <Building2 size={16} />

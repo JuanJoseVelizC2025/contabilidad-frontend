@@ -132,7 +132,7 @@ export default function InicioPage() {
     <div>
       <div
         className="mb-4 overflow-hidden rounded-xl p-5 text-white sm:p-6"
-        style={{ background: "linear-gradient(120deg, #1661BE 0%, #0C7ECF 55%, #00B9F2 100%)" }}
+            style={{ background: "#1661BE" }}
       >
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
@@ -156,7 +156,7 @@ export default function InicioPage() {
             )}
             <Link
               href="/reportes/estado-resultados"
-              className="rounded-md border border-white/60 px-3 py-2 text-sm font-medium text-white hover:bg-white/10"
+                            className="rounded-md bg-white px-3 py-2 text-sm font-medium text-[#1661BE] shadow-sm hover:bg-white/90"
             >
               Estado de Resultados
             </Link>

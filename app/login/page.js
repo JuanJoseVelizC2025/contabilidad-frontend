@@ -2,13 +2,48 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Eye, EyeOff, Lock } from "lucide-react";
 import { api, guardarSesion } from "@/lib/api";
+import Logo from "@/components/Logo";
+
+const REDES = [
+  { nombre: "Facebook", url: "https://www.facebook.com/profile.php?id=61595959863861", icono: "facebook" },
+  { nombre: "Instagram", url: "https://www.instagram.com/erpcontabilidad?utm_source=qr", icono: "instagram" },
+];
+
+function IconoRed({ tipo }) {
+  if (tipo === "facebook") {
+    return (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M13.5 21v-8h2.7l.4-3.2h-3.1V7.8c0-.9.3-1.5 1.6-1.5h1.7V3.4c-.3 0-1.3-.1-2.5-.1-2.5 0-4.1 1.5-4.1 4.2v2.3H7.5V13h2.7v8h3.3z" />
+      </svg>
+    );
+  }
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect x="3" y="3" width="18" height="18" rx="5" />
+      <circle cx="12" cy="12" r="4" />
+      <circle cx="17.5" cy="6.5" r="0.8" fill="currentColor" />
+    </svg>
+  );
+}
 
 export default function LoginPage() {
   const router = useRouter();
   const [modo, setModo] = useState("login");
   const [nombreUsuario, setNombreUsuario] = useState("");
   const [clave, setClave] = useState("");
+  const [ver, setVer] = useState(false);
   const [codigo, setCodigo] = useState("");
   const [nuevaClave, setNuevaClave] = useState("");
   const [confirmar, setConfirmar] = useState("");
@@ -103,55 +138,68 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen">
-      <div className="hidden w-1/2 flex-col justify-between bg-shell p-10 text-white lg:flex">
-        <div className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded bg-brand text-lg font-bold">C</div>
-          <span className="text-lg font-semibold tracking-wide">Contabilidad ERP</span>
-        </div>
+      <div
+        className="hidden w-[44%] flex-col justify-between p-12 text-white lg:flex"
+        style={{ background: "#0B2A5B" }}
+      >
+        <Logo size={40} claro />
 
         <div>
-          <h2 className="mb-4 text-3xl font-semibold leading-tight">
-            Control contable claro, seguro y en tiempo real
-          </h2>
-          <ul className="space-y-2 text-slate-300">
-            <li>Nomenclatura contable de 6 niveles y partidas validadas al centavo</li>
-            <li>Bancos, Diario, Mayor, Balanza, Balance General y Estado de Resultados</li>
-            <li>Acceso por roles, doble autenticación y bitácora de auditoría</li>
-          </ul>
+          <h2 className="mb-3 text-3xl font-semibold leading-tight">Gestión contable clara y confiable</h2>
+          <p className="max-w-sm text-base text-white/70">
+            Contabilidad, bancos, facturación y reportes en una sola plataforma.
+          </p>
         </div>
 
-        <p className="text-xs text-slate-400">Universidad Mariano Gálvez · Desarrollo Web</p>
+        <p className="text-xs text-white/50">© 2026 Contabilidad ERP · Versión 1.0</p>
       </div>
 
-      <div className="flex flex-1 items-center justify-center p-6">
-        <div className="card w-full max-w-sm p-8 shadow">
+      <div className="flex flex-1 flex-col items-center justify-center p-6">
+        <div className="mb-6 lg:hidden">
+          <Logo size={40} />
+        </div>
+
+        <div className="card w-full max-w-sm p-8 shadow-sm">
           {info && <p className="alerta alerta-ok">{info}</p>}
 
           {modo === "login" && (
             <form onSubmit={iniciar}>
               <h1 className="mb-1 text-2xl font-semibold">Iniciar sesión</h1>
-              <p className="mb-6 text-muted">Ingrese sus credenciales para continuar</p>
+              <p className="mb-6 text-muted">Acceda con su usuario y contraseña</p>
 
               <label className="label">Usuario</label>
               <input
                 className="input mb-4"
                 value={nombreUsuario}
                 onChange={(e) => setNombreUsuario(e.target.value)}
+                autoComplete="username"
                 required
               />
 
               <label className="label">Contraseña</label>
-              <input
-                type="password"
-                className="input mb-2"
-                value={clave}
-                onChange={(e) => setClave(e.target.value)}
-                required
-              />
+              <div className="relative mb-2">
+                <input
+                  type={ver ? "text" : "password"}
+                  className="input"
+                  style={{ paddingRight: 36 }}
+                  value={clave}
+                  onChange={(e) => setClave(e.target.value)}
+                  autoComplete="current-password"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setVer(!ver)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted hover:text-slate-700"
+                  aria-label={ver ? "Ocultar contraseña" : "Mostrar contraseña"}
+                >
+                  {ver ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
 
               <button
                 type="button"
-                className="mb-4 text-sm text-brand hover:underline"
+                className="mb-5 text-sm text-brand hover:underline"
                 onClick={() => cambiarModo("olvide")}
               >
                 ¿Olvidó su contraseña?
@@ -266,6 +314,26 @@ export default function LoginPage() {
               </button>
             </form>
           )}
+        </div>
+
+                <p className="mt-4 flex items-center gap-1.5 text-xs text-muted">
+          <Lock size={12} /> Conexión cifrada
+        </p>
+        <p className="mt-2 text-xs text-muted">¿Necesita ayuda?</p>
+        <p className="mt-2 text-xs text-muted">Escriba a contabilidaderp21@gmail.com</p>
+
+        <div className="mt-3 flex items-center gap-4 text-muted">
+          {REDES.map((r) => (
+            <a
+              key={r.nombre}
+              href={r.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 text-xs hover:text-brand"
+            >
+              <IconoRed tipo={r.icono} /> {r.nombre}
+            </a>
+          ))}
         </div>
       </div>
     </div>
