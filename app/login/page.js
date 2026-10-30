@@ -320,6 +320,14 @@ export default function LoginPage() {
           <Lock size={12} /> Conexión cifrada
         </p>
         <p className="mt-2 text-xs text-muted">¿Necesita ayuda?</p>
+                <a
+          href="https://contaedpr.netlify.app/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-2 text-xs text-brand hover:underline"
+        >
+          Conozca más del sistema
+        </a>
         <p className="mt-2 text-xs text-muted">Escriba a contabilidaderp21@gmail.com</p>
 
         <div className="mt-3 flex items-center gap-4 text-muted">
