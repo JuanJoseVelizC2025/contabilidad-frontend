@@ -69,9 +69,17 @@ export default function LoginPage() {
   }
 
   function entrar(datos) {
-    guardarSesion(datos);
-    router.push("/inicio");
-  }
+  guardarSesion(datos);
+  setModo("login");
+  setNombreUsuario("");
+  setClave("");
+  setCodigo("");
+  setNuevaClave("");
+  setConfirmar("");
+  setInfo("");
+  setError("");
+  router.push("/inicio");
+}
 
   function iniciar(e) {
     e.preventDefault();

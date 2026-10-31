@@ -165,7 +165,7 @@ export default function SistemaLayout({ children }) {
 
   function salir() {
     cerrarSesion();
-    router.replace("/login");
+    window.location.href = "/login";
   }
 
   if (!usuario) return <p className="p-6">Cargando...</p>;
