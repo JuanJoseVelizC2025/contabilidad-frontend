@@ -321,7 +321,7 @@ export default function LoginPage() {
         </p>
         <p className="mt-2 text-xs text-muted">¿Necesita ayuda?</p>
                 <a
-          href="https://contaedpr.netlify.app/"
+          href="https://erpconta.netlify.app/"
           target="_blank"
           rel="noopener noreferrer"
           className="mt-2 text-xs text-brand hover:underline"
